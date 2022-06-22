@@ -254,6 +254,12 @@ final class WPGraphQL_FacetWP
 				if ( ! self::$use_graphql_pagination ) {
 					// Manually override the first query arg if per_page > 10, the first default value.
 					$args['first'] = $source['pager']['per_page'];
+					$args['where']['orderby'] = array(
+						array(
+							'field' => 'post__in',
+							'order' => 'ASC',
+						),
+					);
 				}
                 $resolver = new PostObjectConnectionResolver($source, $args, $context, $info, $type);
 				
@@ -650,6 +656,22 @@ final class WPGraphQL_FacetWP
                             $type = 'Int';
 
                             break;
+						
+						case 'sort':
+							$type = ucfirst( self::to_camel_case( $cur['name'] ) ) . 'Options';
+
+							$values = array();
+							foreach ( $cur['sort_options'] as $option ) {
+								$values[ WPEnumType::get_safe_name( $option['label'] ) ] = array(
+									'value' => $option['name']
+								);
+							}
+
+                            register_graphql_enum_type($type, [
+                                'description'   => $cur['label'],
+                                'values'        => $values,
+                            ]);
+							break;
                         case 'autocomplete':
                         case 'checkboxes':
                         case 'dropdown':
@@ -740,6 +762,7 @@ final class WPGraphQL_FacetWP
                     case 'dropdown':
                     case 'hierarchy':
                     case 'search':
+					case 'sort':
                     case 'autocomplete':
                         $prev[$name] = $facet;
                         break;
